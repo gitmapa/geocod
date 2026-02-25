@@ -67,6 +67,23 @@ function geocode_pending_for_table(array $tableConfig)
     $tabla   = $tableConfig['tabla']   ?? null;
 
     // ----------------------------------------------------------
+    // PASO 0 — Chequeo previo de disponibilidad de la API.
+    // Antes de tocar cualquier registro, verificamos que la API
+    // de IDECABA esté respondiendo con una dirección de prueba
+    // conocida. Si falla, retornamos error inmediatamente sin
+    // modificar ningún registro de la tabla.
+    // ----------------------------------------------------------
+    $prueba = api_geocode('Brandsen 805');
+
+    if ($prueba['http_code'] != 200 || empty($prueba['json']['data'])) {
+        return [
+            'error' => "La API de IDECABA no está respondiendo correctamente. " .
+                       "Verificá la conexión o las credenciales antes de reintentar. " .
+                       "(HTTP: " . ($prueba['http_code'] ?: 'sin respuesta') . ")"
+        ];
+    }
+
+    // ----------------------------------------------------------
     // Validar que esquema y tabla estén presentes y sean seguros.
     // Solo se permiten letras, números y guiones bajos para evitar
     // inyección SQL, ya que estos valores se interpolan en el query

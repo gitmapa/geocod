@@ -19,7 +19,6 @@ session_start();
 
 require_once __DIR__ . '/lib/tables_config.php';
 require_once __DIR__ . '/lib/geocoder_engine.php';
-require_once __DIR__ . '/lib/report_utils.php';
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/parser_direcciones.php';
 
@@ -1007,7 +1006,15 @@ elseif ($tab_activa === 'guia'):
             Para instrucciones de instalación, estructura del proyecto y scripts SQL
             consultá el <code>README.md</code> en el repositorio.
         </p>
+        <hr>
 
+                <h5 class="mt-4">Diagnóstico del sistema</h5>
+                <p>
+                    Verificá que todos los componentes estén correctamente instalados y configurados.
+                </p>
+                <a href="selftest.php" target="_blank" class="btn btn-outline-secondary">
+                    🔧 Ejecutar Self Test
+                </a>
     </div>
 
 <?php endif; ?>
