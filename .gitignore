@@ -18,3 +18,7 @@ Thumbs.db
 # XAMPP / PHP
 error_log
 php_errors.log
+
+# Composer
+vendor/
+composer.lock

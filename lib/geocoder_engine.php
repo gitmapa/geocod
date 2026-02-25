@@ -247,9 +247,9 @@ function geocode_pending_for_table(array $tableConfig)
             if ($resp_wgs['http_code'] == 200 && !empty($json_wgs['data'])) {
 
                 // La API devuelve x=longitud, y=latitud
-                $campos['latitud_wgs84']  = $json_wgs['data']['y'] ?? null;
-                $campos['longitud_wgs84'] = $json_wgs['data']['x'] ?? null;
-                $campos['estado_proceso'] = 'OK';
+                $campos['latitud_wgs84']   = $json_wgs['data']['y'] ?? null;
+                $campos['longitud_wgs84']  = $json_wgs['data']['x'] ?? null;
+                $campos['estado_proceso']  = 'OK';
                 $campos['fecha_procesado'] = date('Y-m-d H:i:s');
 
                 $resumen['ok']++;
