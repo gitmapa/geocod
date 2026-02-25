@@ -8,50 +8,71 @@
 //             Pensado para uso del administrador/desarrollador,
 //             no para el usuario final.
 //
-//             Chequeos realizados:
-//               1. Extensión pgsql de PHP disponible
-//               2. PhpSpreadsheet instalado (vendor/autoload.php)
-//               3. Conexión a la base de datos PostgreSQL
-//               4. Existencia de tablas de configuración
-//               5. API de IDECABA respondiendo (Brandsen 805)
+//             Ejecuta 6 chequeos en secuencia:
+//               1. Extensión PHP pgsql
+//               2. Extensión PHP curl
+//               3. PhpSpreadsheet (vendor/autoload.php)
+//               4. Conexión a PostgreSQL
+//               5. Existencia de esquemas y tablas requeridas
+//               6. API de IDECABA respondiendo (Brandsen 805)
+//
+//             Muestra los resultados en una tabla HTML con
+//             indicadores visuales por chequeo y un resumen
+//             general al inicio.
 // -------------------------------------------------------------
 // Acceso : http://localhost/geocod/selftest.php
+// -------------------------------------------------------------
+// Dependencias (cargadas condicionalmente si existen):
+//   - lib/db.php          (db_connect, db_query, tabla_existe)
+//   - lib/api_idecaba.php (api_geocode)
+//   - vendor/autoload.php (PhpSpreadsheet)
 // -------------------------------------------------------------
 // Versión : 1.1
 // =============================================================
 
-// Evitar que errores de PHP interrumpan el HTML del reporte
+// Mostrar todos los errores de PHP pero sin interrumpir el HTML.
+// Así el reporte siempre se renderiza aunque algo falle.
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// Cargar dependencias solo si están disponibles
-$db_disponible      = file_exists(__DIR__ . '/lib/db.php');
-$api_disponible     = file_exists(__DIR__ . '/lib/api_idecaba.php');
-$vendor_disponible  = file_exists(__DIR__ . '/vendor/autoload.php');
+// ------------------------------------------------------------
+// Verificar existencia de dependencias antes de cargarlas.
+// Se usa file_exists() para no generar un fatal error si
+// algún archivo no está presente — el chequeo lo reportará.
+// ------------------------------------------------------------
+$db_disponible     = file_exists(__DIR__ . '/lib/db.php');
+$api_disponible    = file_exists(__DIR__ . '/lib/api_idecaba.php');
+$vendor_disponible = file_exists(__DIR__ . '/vendor/autoload.php');
 
 if ($db_disponible)  require_once __DIR__ . '/lib/db.php';
 if ($api_disponible) require_once __DIR__ . '/lib/api_idecaba.php';
 
 // ------------------------------------------------------------
-// Ejecutar todos los chequeos y acumular resultados
+// Acumulador de resultados de chequeos.
+// Cada elemento es un array con:
+//   'nombre'  (string) — nombre legible del componente
+//   'ok'      (bool)   — true si el chequeo pasó
+//   'detalle' (string) — descripción del resultado o del error
 // ------------------------------------------------------------
 $checks = [];
 
 // ------------------------------------------------------------
-// CHECK 1 — Extensión pgsql de PHP
+// CHECK 1 — Extensión PHP pgsql
+// Requerida para todas las funciones pg_*() que usa lib/db.php.
 // Sin esta extensión no hay conexión a PostgreSQL posible.
 // ------------------------------------------------------------
 $checks[] = [
-    'nombre'   => 'Extensión PHP pgsql',
-    'ok'       => extension_loaded('pgsql'),
-    'detalle'  => extension_loaded('pgsql')
+    'nombre'  => 'Extensión PHP pgsql',
+    'ok'      => extension_loaded('pgsql'),
+    'detalle' => extension_loaded('pgsql')
                     ? 'Disponible'
                     : 'No disponible — habilitá extension=pgsql en php.ini',
 ];
 
 // ------------------------------------------------------------
-// CHECK 2 — Extensión curl de PHP
-// Necesaria para las llamadas a la API de IDECABA.
+// CHECK 2 — Extensión PHP curl
+// Requerida para las llamadas HTTP a la API de IDECABA
+// que realiza lib/api_idecaba.php con curl_init() etc.
 // ------------------------------------------------------------
 $checks[] = [
     'nombre'  => 'Extensión PHP curl',
@@ -62,19 +83,22 @@ $checks[] = [
 ];
 
 // ------------------------------------------------------------
-// CHECK 3 — PhpSpreadsheet (vendor/autoload.php)
-// Requerido para la generación de archivos .xlsx en Descargas.
+// CHECK 3 — PhpSpreadsheet via Composer
+// Requerido para generar archivos .xlsx en descargar.php.
+// Se verifica la existencia del autoloader de Composer.
 // ------------------------------------------------------------
 $checks[] = [
     'nombre'  => 'PhpSpreadsheet (vendor/autoload.php)',
     'ok'      => $vendor_disponible,
     'detalle' => $vendor_disponible
                     ? 'Disponible'
-                    : 'No encontrado — ejecutá: composer require phpoffice/phpspreadsheet',
+                    : 'No encontrado — ejecutá: composer install',
 ];
 
 // ------------------------------------------------------------
 // CHECK 4 — Conexión a la base de datos PostgreSQL
+// Intenta abrir la conexión real usando db_connect().
+// Solo se ejecuta si lib/db.php está disponible.
 // ------------------------------------------------------------
 $db_ok      = false;
 $db_detalle = 'No se intentó (lib/db.php no encontrado)';
@@ -86,7 +110,7 @@ if ($db_disponible) {
             $db_ok      = true;
             $db_detalle = 'Conexión exitosa';
         } else {
-            $db_detalle = 'Falló pg_connect() — verificá db_config.php';
+            $db_detalle = 'Falló pg_connect() — verificá config/db_config.php';
         }
     } catch (Throwable $e) {
         $db_detalle = 'Error: ' . $e->getMessage();
@@ -100,16 +124,11 @@ $checks[] = [
 ];
 
 // ------------------------------------------------------------
-// CHECK 5 — Tablas de configuración en la base
-// Verifica que los esquemas y tablas base del sistema existan.
+// CHECK 5 — Esquemas y tablas requeridas en la base
+// Verifica que existan los esquemas geocod y geopedidos, y las
+// tres tablas de configuración del sistema.
+// Solo se ejecuta si la conexión a la base fue exitosa.
 // ------------------------------------------------------------
-$tablas_requeridas = [
-    ['esquema' => 'geocod',     'tabla' => 'tablas_config'],
-    ['esquema' => 'geocod',     'tabla' => 'tablas_geo_config'],
-    ['esquema' => 'geocod',     'tabla' => 'tabla_geo_plantilla'],
-    ['esquema' => 'geopedidos', 'tabla' => null], // solo verifica el esquema
-];
-
 if ($db_ok) {
 
     // Verificar esquema geocod
@@ -132,7 +151,7 @@ if ($db_ok) {
                         : 'No existe — ejecutá sql/00_esquemas.sql',
     ];
 
-    // Verificar tablas una por una
+    // Verificar las tres tablas de configuración del sistema
     foreach (['tablas_config', 'tablas_geo_config', 'tabla_geo_plantilla'] as $t) {
         $existe = tabla_existe('geocod', $t);
         $checks[] = [
@@ -145,8 +164,7 @@ if ($db_ok) {
     }
 
 } else {
-
-    // Sin conexión DB no podemos verificar tablas
+    // Sin conexión no se pueden verificar las tablas
     $checks[] = [
         'nombre'  => 'Tablas de configuración',
         'ok'      => false,
@@ -155,8 +173,11 @@ if ($db_ok) {
 }
 
 // ------------------------------------------------------------
-// CHECK 6 — API de IDECABA (dirección de prueba: Brandsen 805)
-// La misma dirección que usa el motor antes de geocodificar.
+// CHECK 6 — API de IDECABA
+// Llama al geocoder con la misma dirección de prueba que usa
+// el motor antes de procesar (Brandsen 805).
+// Si este chequeo pasa, el motor puede ejecutarse correctamente.
+// Solo se ejecuta si lib/api_idecaba.php está disponible.
 // ------------------------------------------------------------
 $api_ok      = false;
 $api_detalle = 'No se intentó (lib/api_idecaba.php no encontrado)';
@@ -185,11 +206,11 @@ $checks[] = [
 ];
 
 // ------------------------------------------------------------
-// Calcular resumen
+// Calcular totales para el resumen del encabezado
 // ------------------------------------------------------------
-$total_ok    = count(array_filter($checks, fn($c) => $c['ok']));
-$total_fail  = count($checks) - $total_ok;
-$todo_ok     = $total_fail === 0;
+$total_ok   = count(array_filter($checks, fn($c) => $c['ok']));
+$total_fail = count($checks) - $total_ok;
+$todo_ok    = $total_fail === 0;
 
 ?>
 <!DOCTYPE html>
@@ -211,7 +232,7 @@ $todo_ok     = $total_fail === 0;
 
 <div class="container">
 
-    <!-- Resumen general -->
+    <!-- Resumen general: verde si todo OK, rojo si hay fallos -->
     <div class="alert <?= $todo_ok ? 'alert-success' : 'alert-danger' ?> mb-4">
         <?php if ($todo_ok): ?>
             <strong>✅ Todo OK.</strong> El sistema está correctamente instalado y configurado.
@@ -221,7 +242,7 @@ $todo_ok     = $total_fail === 0;
         <?php endif; ?>
     </div>
 
-    <!-- Tabla de resultados -->
+    <!-- Tabla de resultados por chequeo -->
     <div class="card shadow-sm p-4">
         <table class="table table-bordered align-middle mb-0">
             <thead class="table-dark">
@@ -245,6 +266,7 @@ $todo_ok     = $total_fail === 0;
         </table>
     </div>
 
+    <!-- Versión de PHP y timestamp del chequeo -->
     <p class="text-muted mt-3 small text-end">
         PHP <?= phpversion() ?> &nbsp;|&nbsp;
         <?= date('Y-m-d H:i:s') ?>

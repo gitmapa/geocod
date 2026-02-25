@@ -9,7 +9,7 @@ Los resultados se exportan en formato Excel (.xlsx) con coordenadas correctament
 
 ## Requisitos
 
-- XAMPP con PHP 8.x y extensiones `pgsql` y `curl` habilitadas
+- XAMPP con PHP 8.1+ y extensiones `pgsql` y `curl` habilitadas
 - PostgreSQL local (puerto 5432)
 - Composer (para instalar PhpSpreadsheet)
 - Acceso a la API de IDECABA (credenciales propias)
@@ -38,11 +38,11 @@ Esto genera la carpeta `vendor/` con PhpSpreadsheet.
 Copiá los archivos de ejemplo y completá con tus datos reales:
 
 ```bash
-cp config/api_config.example.php config/api_config.php
-cp config/db_config.example.php  config/db_config.php
+cp config/api_config_example.php config/api_config.php
+cp config/db_config_example.php  config/db_config.php
 ```
 
-Editá `config/api_config.php` con tu `client_id` y `client_secret` de IDECABA.
+Editá `config/api_config.php` con tu `client_id` y `client_secret` de IDECABA.  
 Editá `config/db_config.php` con los datos de tu PostgreSQL local.
 
 > ⚠️ Estos archivos están en `.gitignore` y **nunca deben subirse al repositorio**.
@@ -55,10 +55,10 @@ Ejecutá los scripts SQL incluidos en la carpeta `sql/` en este orden:
 sql/00_esquemas.sql
 sql/01_tablas_config.sql
 sql/02_tablas_geo_config.sql
-sql/03_tabla_geo_plantilla.sql
+sql/03_tabla_geo_plantillas.sql
 ```
 
-Si estás migrando desde v1.0, ejecutar también:
+Si estás migrando desde v1.0, ejecutá también:
 
 ```
 sql/04_migracion_v1_1.sql
@@ -72,7 +72,8 @@ Abrí en el navegador:
 http://localhost/geocod/selftest.php
 ```
 
-Deberías ver todos los chequeos en verde: extensiones PHP, PhpSpreadsheet, conexión a la base, tablas de configuración y API de IDECABA.
+Deberías ver todos los chequeos en verde: extensiones PHP, PhpSpreadsheet,
+conexión a la base, esquemas y tablas de configuración, y API de IDECABA.
 
 ---
 
@@ -80,32 +81,32 @@ Deberías ver todos los chequeos en verde: extensiones PHP, PhpSpreadsheet, cone
 
 ```
 geocod/
-├── index.php                    # Interfaz principal (4 pestañas)
-├── descargar.php                # Endpoint de descarga Excel (.xlsx)
-├── selftest.php                 # Diagnóstico del sistema
-├── composer.json                # Dependencias PHP
+├── index.php                      # Interfaz principal (4 pestañas)
+├── descargar.php                  # Endpoint de descarga Excel (.xlsx)
+├── selftest.php                   # Diagnóstico del sistema
+├── composer.json                  # Dependencias PHP
 │
 ├── config/
-│   ├── api_config.php           # Credenciales API (NO en repo)
-│   ├── api_config.example.php   # Plantilla de ejemplo
-│   ├── db_config.php            # Credenciales DB (NO en repo)
-│   └── db_config.example.php    # Plantilla de ejemplo
+│   ├── api_config.php             # Credenciales API IDECABA (NO en repo)
+│   ├── api_config_example.php     # Plantilla de ejemplo
+│   ├── db_config.php              # Credenciales PostgreSQL (NO en repo)
+│   └── db_config_example.php      # Plantilla de ejemplo
 │
 ├── lib/
-│   ├── api_idecaba.php          # Wrapper de llamadas a la API IDECABA
-│   ├── db.php                   # Conexión PostgreSQL y helpers
-│   ├── geocoder_engine.php      # Motor principal de geocodificación
-│   ├── parser_direcciones.php   # Parser de direcciones crudas
-│   └── tables_config.php        # Abstracción de geocod.tablas_config
+│   ├── api_idecaba.php            # Wrapper de llamadas a la API IDECABA
+│   ├── db.php                     # Conexión PostgreSQL y helpers
+│   ├── geocoder_engine.php        # Motor principal de geocodificación
+│   ├── parser_direcciones.php     # Parser de direcciones crudas
+│   └── tables_config.php          # Abstracción de geocod.tablas_config
 │
 ├── sql/
-│   ├── 00_esquemas.sql          # Creación de esquemas geocod y geopedidos
-│   ├── 01_tablas_config.sql     # Tabla de configuración de tablas geocodificables
-│   ├── 02_tablas_geo_config.sql # Tabla de tracking del ciclo de vida
-│   ├── 03_tabla_geo_plantilla.sql # Plantilla base para tablas _geo
-│   └── 04_migracion_v1_1.sql   # Migración desde v1.0
+│   ├── 00_esquemas.sql            # Creación de esquemas geocod y geopedidos
+│   ├── 01_tablas_config.sql       # Tabla de configuración de tablas geocodificables
+│   ├── 02_tablas_geo_config.sql   # Tabla de tracking del ciclo de vida
+│   ├── 03_tabla_geo_plantillas.sql # Plantilla base para tablas _geo
+│   └── 04_migracion_v1_1.sql     # Migración desde v1.0
 │
-└── vendor/                      # Dependencias Composer (NO en repo)
+└── vendor/                        # Dependencias Composer (NO en repo)
 ```
 
 ---
@@ -131,12 +132,18 @@ geocod/
 
 ---
 
-## Versiones
+## Tiempos estimados de geocodificación
 
-| Versión | Descripción |
+| Volumen | Tiempo aproximado |
 |---|---|
-| v1.0 | Versión inicial |
-| v1.1 | Mejoras de UI, carga de CSV, descargas Excel, chequeo de API, refactor |
+| 1.000 direcciones | ~8 min 30 seg |
+| 5.000 direcciones | ~42 minutos |
+| 10.000 direcciones | ~1 hora 25 min |
+| 25.000 direcciones | ~3 horas 30 min |
+| 65.000 direcciones | ~9 horas 18 min *(caso real medido)* |
+| 100.000 direcciones | ~14 horas 15 min |
+
+Los tiempos varían según la latencia de la API y la carga del servidor.
 
 ---
 
@@ -149,8 +156,21 @@ geocod/
 
 ---
 
+## Versiones
+
+| Versión | Descripción |
+|---|---|
+| v1.0 | Versión inicial |
+| v1.1 | Mejoras de UI, carga de CSV, descargas Excel, chequeo de API, refactor y documentación |
+
+---
+
 ## Para desarrolladores
 
-Stack: PHP 8.x nativo · PostgreSQL · PhpSpreadsheet · API IDECABA (datos abiertos GCBA) · Bootstrap 5
+Stack: PHP 8.1+ nativo · PostgreSQL · PhpSpreadsheet · API IDECABA (datos abiertos GCBA) · Bootstrap 5
+
+> **Nota PHP 8.1+**: las funciones `pg_*` retornan objetos tipados (`PgSql\Connection`,
+> `PgSql\Result`) en lugar de `resource`. Los docblocks del código ya reflejan estos tipos.
+> `curl_close()` fue deprecado en PHP 8.0 y está eliminado del código.
 
 Repo: [github.com/gitmapa/geocod](https://github.com/gitmapa/geocod)
