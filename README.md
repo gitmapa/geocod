@@ -39,10 +39,13 @@ Editá `config/db_config.php` con los datos de tu PostgreSQL local.
 
 Ejecutá los scripts SQL incluidos en la carpeta `sql/` (en orden):
 ```
+sql/00_esquemas.sql
 sql/01_tablas_config.sql
 sql/02_tablas_geo_config.sql
 sql/03_tabla_geo_plantilla.sql
 ```
+
+---
 
 ### 4. Verificar instalación
 
