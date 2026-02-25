@@ -17,6 +17,7 @@ datos útiles (comuna, barrio, CP, etc.) y transformar a WGS84.
 ## Instalación
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/gitmapa/geocod.git
 cd geocod
@@ -25,6 +26,7 @@ cd geocod
 ### 2. Configurar credenciales
 
 Copiá los archivos de ejemplo y completá con tus datos reales:
+
 ```bash
 cp config/api_config.example.php config/api_config.php
 cp config/db_config.example.php  config/db_config.php
@@ -37,7 +39,8 @@ Editá `config/db_config.php` con los datos de tu PostgreSQL local.
 
 ### 3. Crear las tablas en PostgreSQL
 
-Ejecutá los scripts SQL incluidos en la carpeta `sql/` (en orden):
+Ejecutá los scripts SQL incluidos en la carpeta `sql/` en este orden:
+
 ```
 sql/00_esquemas.sql
 sql/01_tablas_config.sql
@@ -45,11 +48,10 @@ sql/02_tablas_geo_config.sql
 sql/03_tabla_geo_plantilla.sql
 ```
 
----
-
 ### 4. Verificar instalación
 
 Abrí en el navegador:
+
 ```
 http://localhost/geocod/selftest.php
 ```
@@ -59,6 +61,7 @@ Deberías ver confirmación de conexión a la base y respuesta de la API.
 ---
 
 ## Estructura del proyecto
+
 ```
 geocod/
 ├── index.php                   # Interfaz principal (3 pestañas)
@@ -70,13 +73,19 @@ geocod/
 │   ├── db_config.php           # Credenciales DB (NO en repo)
 │   └── db_config.example.php   # Plantilla de ejemplo
 │
-└── lib/
-    ├── api_idecaba.php         # Wrapper de llamadas a la API IDECABA
-    ├── db.php                  # Conexión PostgreSQL y helpers
-    ├── geocoder_engine.php     # Motor principal de geocodificación
-    ├── parser_direcciones.php  # Parser de direcciones crudas
-    ├── report_utils.php        # Render de reportes en la UI
-    └── tables_config.php       # Abstracción de geocod.tablas_config
+├── lib/
+│   ├── api_idecaba.php         # Wrapper de llamadas a la API IDECABA
+│   ├── db.php                  # Conexión PostgreSQL y helpers
+│   ├── geocoder_engine.php     # Motor principal de geocodificación
+│   ├── parser_direcciones.php  # Parser de direcciones crudas
+│   ├── report_utils.php        # Render de reportes en la UI
+│   └── tables_config.php       # Abstracción de geocod.tablas_config
+│
+└── sql/
+    ├── 00_esquemas.sql         # Creación de esquemas geocod y geopedidos
+    ├── 01_tablas_config.sql    # Tabla de configuración de tablas geocodificables
+    ├── 02_tablas_geo_config.sql# Tabla de tracking del ciclo de vida
+    └── 03_tabla_geo_plantilla.sql # Plantilla base para tablas _geo
 ```
 
 ---
@@ -97,6 +106,7 @@ geocod/
 |---|---|
 | `POBLADA` | Tabla geo creada y con datos, lista para enviar |
 | `ENVIADA` | Copiada a esquema `geocod`, lista para geocodificar |
+| `GEOCODER_OK` | Geocoder respondió OK, pendiente transformación WGS84 |
 | `OK` | Geocodificación completada exitosamente |
 | `ERROR_API_GEOCODER` | Falló la llamada al geocoder de IDECABA |
 | `ERROR_API_WGS84` | Falló la transformación de coordenadas a WGS84 |
