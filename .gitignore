@@ -1,0 +1,20 @@
+# =============================================================
+# .gitignore — Sistema de Geocodificación IDECABA
+# =============================================================
+
+# Credenciales reales (NUNCA subir al repo)
+config/api_config.php
+config/db_config.php
+
+# Archivos de sistema y editores
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+.idea/
+.vscode/
+
+# XAMPP / PHP
+error_log
+php_errors.log
